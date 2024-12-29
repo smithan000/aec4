@@ -1,0 +1,227 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+# Import support vector regressor algorithm
+from sklearn.svm import SVR
+from sklearn.linear_model import Ridge, Lasso
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+# Import modelling methods
+from sklearn.model_selection import train_test_split, RepeatedStratifiedKFold, cross_val_score
+# Import the model performance evaluation metrics
+from sklearn import metrics
+# Import Adaboost, Gradient Boost, Random Forest and Stacking algorithm
+from sklearn.ensemble import AdaBoostClassifier, GradientBoostingRegressor, RandomForestRegressor, StackingRegressor
+import warnings
+warnings.filterwarnings('ignore')
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+# Instead of load_boston, use fetch_california_housing or fetch_openml
+# from sklearn.datasets import load_boston   # to import boston housing dataset
+from sklearn.datasets import fetch_california_housing  # Importing the California housing dataset instead
+# to visualize decision boundaries
+import graphviz
+import xgboost as xgb
+from xgboost import XGBRegressor
+
+# Load the California housing dataset
+housing = fetch_california_housing()
+# Access the data and target variables
+X = housing.data
+y = housing.target
+
+# You can now use X and y for your machine learning tasks.
+
+
+
+df = pd.read_csv('indian_liver_patient.csv')
+df.head()
+
+# Check for missing values
+df.isnull().sum()
+
+# Drop missing values
+df1 = df.dropna()
+df1.isnull().any()
+
+# Visualize correlation matrix
+fig, ax = plt.subplots(figsize=(7,7))
+# Convert 'Gender' column to numerical representation using pd.get_dummies
+# This creates new columns for each category in 'Gender' (e.g., 'Gender_Female', 'Gender_Male') with 1s and 0s
+df1_encoded = pd.get_dummies(df1, columns=['Gender'], drop_first=True) # drop_first avoids multicollinearity
+
+# Calculate correlation on the encoded DataFrame
+sns.heatmap(abs(df1_encoded.corr()), annot=True, square=True, cbar=False, ax=ax, linewidths=0.25);
+
+
+# Drop correlated features
+df2 = df1.drop(columns= ['Direct_Bilirubin', 'Alamine_Aminotransferase', 'Total_Protiens'])
+
+df2['Dataset'] = df2['Dataset'].replace(1,0)
+df2['Dataset'] = df2['Dataset'].replace(2,1)
+
+print('How many people have disease:', '\n', df2.groupby('Gender')[['Dataset']].sum(), '\n')
+print('How many people participated in the study:', '\n', df2.groupby('Gender')[['Dataset']].count())
+
+print('Percentage of people with the disease depending on gender:')
+df2.groupby('Gender')[['Dataset']].sum()/ df2.groupby('Gender')[['Dataset']].count()
+
+# defining the X and y variables
+X = df2[['Gender', 'Total_Bilirubin','Alkaline_Phosphotase','Aspartate_Aminotransferase','Albumin','Albumin_and_Globulin_Ratio']]
+y = pd.Series(df2['Dataset'])
+
+labelencoder = LabelEncoder()
+X['Gender'] = labelencoder.fit_transform(X['Gender'])
+
+x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+scaler = StandardScaler()
+X_train = scaler.fit_transform(x_train)
+X_test = scaler.transform(x_test)
+
+ADB = AdaBoostClassifier(DecisionTreeClassifier(max_depth=2),
+                         n_estimators=125,
+                         learning_rate = 0.6,
+                         random_state=42)
+
+ADB.fit(X_train, y_train)
+cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
+# calculating model evaluation metrics using cross_val_score like accuracy, R2 score, etc.
+n_scores = cross_val_score(ADB, X, y, scoring='accuracy', cv=cv, n_jobs=-1, error_score='raise')
+('Accuracy: %.3f' % (np.mean(n_scores)*100))
+labels = ADB.predict(X_test)
+matrix = metrics.confusion_matrix(y_test, labels)
+# creating a heat map to visualize confusion matrix
+sns.heatmap(matrix.T, square=True, annot=True, fmt='d', cbar=False)
+plt.xlabel('true label')
+plt.ylabel('predicted label');
+
+logit_roc_auc = metrics.roc_auc_score(y_test, labels)
+fpr, tpr, thresholds = metrics.roc_curve(y_test, ADB.predict_proba(X_test)[:,1])
+plt.figure()
+plt.plot(fpr, tpr, label='(area = %0.2f)' % logit_roc_auc)
+plt.plot([0, 1], [0, 1],'r--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.legend(loc="lower right")
+plt.savefig('Log_ROC')
+plt.show()
+
+#!pip install scikit-learn==1.0.2 # Install scikit-learn version 1.0.2 which includes load_boston
+#from sklearn.datasets import load_boston
+
+#boston = load_boston()
+#print(boston.keys())
+#print("shape of dataset",boston.data.shape)
+housing = fetch_california_housing()
+
+print(housing.keys())
+print("shape of dataset",housing.data.shape)
+
+print(housing.feature_names)
+df = pd.DataFrame(housing.data)
+df.columns = housing.feature_names
+
+df.head()
+df['PRICE'] = housing.target
+df.info()
+X, y = df.iloc[:,:-1],df.iloc[:,-1]
+xtrain, xtest, ytrain, ytest=train_test_split(X, y, random_state=12, test_size=0.15)
+
+# with new parameters
+gbr1 = GradientBoostingRegressor(alpha=0.9, criterion='friedman_mse', n_estimators=600,
+    max_depth=5,
+    learning_rate=0.01,
+    min_samples_split=4)
+# with default parameters
+gbr = GradientBoostingRegressor()
+# fit with default parameters
+gbr.fit(xtrain, ytrain)
+
+ypred = gbr.predict(xtest)
+
+# calculating Mean Squared Error
+mse = metrics.mean_squared_error(ytest,ypred)
+# mse for default model
+print("MSE: %.2f" % mse)
+
+# fit by passing hyperparameters
+gbr1.fit(xtrain, ytrain)
+
+ypred1 = gbr1.predict(xtest)
+# calculating Mean Squared Error
+mse1 = metrics.mean_squared_error(ytest, ypred1)
+
+# mse for regularized model
+print("MSE: %.2f" % mse1)
+x_ax = range(len(ytest))
+plt.scatter(x_ax, ytest, s=5, color="blue", label="original")
+plt.plot(x_ax, ypred, lw=0.8, color="red", label="predicted")
+plt.legend()
+plt.show()
+
+x_ax = range(len(ytest))
+plt.scatter(x_ax, ytest, s=5, color="blue", label="original")
+plt.plot(x_ax, ypred1, lw=0.8, color="red", label="predicted")
+plt.legend()
+plt.show()
+import xgboost as xgb  # Ensure xgboost is imported
+
+
+# Remove this line. It's causing the error because it tries to assign an undefined name 'xgboost' to xgb.
+# xgb = xgboost
+
+# You can directly use xgb since it's already aliased to xgboost in the first line.
+xgb_reg = xgb.XGBRegressor(objective='reg:linear', colsample_bytree=0.3, learning_rate=0.1,
+                          max_depth=5, alpha=10, n_estimators=10)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=123)
+
+xgb_reg.fit(X_train,y_train)
+
+y_pred = xgb_reg.predict(X_test)
+mse2 = metrics.mean_squared_error(y_test, y_pred)
+print("MSE: %f" % (mse))
+xgb.plot_importance(xgb_reg)
+plt.rcParams['figure.figsize'] = [5, 5]
+plt.show()
+xgb = XGBRegressor()
+rf = RandomForestRegressor(n_estimators=400, max_depth=5, max_features=6)
+ridge = Ridge()
+lasso = Lasso()
+svr = SVR(kernel='rbf')
+
+import pandas as pd
+from sklearn.datasets import fetch_california_housing
+from sklearn.ensemble import StackingRegressor, RandomForestRegressor
+from sklearn.linear_model import Ridge, Lasso
+from sklearn.svm import SVR
+from xgboost import XGBRegressor
+from sklearn.model_selection import train_test_split
+
+
+xgb = XGBRegressor()
+rf = RandomForestRegressor(n_estimators=400, max_depth=5, max_features=6)
+# Force Ridge to use a different solver
+ridge = Ridge(solver='lsqr')  # or 'svd'
+lasso = Lasso()
+svr = SVR(kernel='rbf')
+
+estimators = [('ridge', ridge), ('svr', svr), ('rf', rf), ('lasso', lasso)]
+reg = StackingRegressor(estimators=estimators, final_estimator=xgb)
+
+# Load the California housing dataset
+california_housing = fetch_california_housing(as_frame=True)
+X, y = california_housing.data, california_housing.target
+
+# Split the data into training and testing sets
+X_train, X_test_actual, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Fit the model
+reg.fit(X_train, y_train)
+
+# Now you can use X_test_actual for prediction
+pred = reg.predict(X_test_actual)
+
+score = metrics.r2_score(y_test, pred)
+print(score)
+
+
+
