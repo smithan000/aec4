@@ -1,0 +1,86 @@
+!pip -qq install dtreeviz
+
+import numpy as np
+from matplotlib import pyplot as plt
+from matplotlib.colors import ListedColormap                                 
+from sklearn import datasets
+from sklearn import tree
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor       
+import graphviz                                                               
+from dtreeviz import trees
+
+iris = datasets.load_iris()
+X = iris.data[:, 2:]
+y = iris.target
+clf = DecisionTreeClassifier(max_depth = 2, random_state=1234)
+model = clf.fit(X, y)
+
+text_representation = tree.export_text(clf)
+
+with open("decision_tree.log", "w") as f_out:
+    f_out.write(text_representation)
+    
+    
+fig = plt.figure(figsize=(10,8))
+_ = tree.plot_tree(clf,
+                   feature_names=iris.feature_names,
+                   class_names=iris.target_names,
+                   filled=True) 
+                   
+                   
+iris = datasets.load_iris()
+X = iris.data[:, 2:]
+y = iris.target
+
+tree_clf = DecisionTreeClassifier(random_state=42)
+tree_clf.fit(X, y)
+
+tree_clf2 = DecisionTreeClassifier(max_depth =2, min_samples_leaf =1, min_samples_split = 2, random_state=2)
+tree_clf2.fit(X, y)
+
+
+def plot_decision_boundary(clf, X, y, axes=[0, 7.5, 0, 3], iris = True, legend=False, plot_training=True):
+    x1s = np.linspace(axes[0], axes[1], 100)
+    x2s = np.linspace(axes[2], axes[3], 100)
+    x1, x2 = np.meshgrid(x1s, x2s)
+    X_new = np.c_[x1.ravel(), x2.ravel()]
+    y_pred = clf.predict(X_new).reshape(x1.shape)
+    custom_cmap = ListedColormap(['#fafab0','#9898ff','#a0faa0'])
+    plt.contourf(x1, x2, y_pred, alpha=0.3, cmap=custom_cmap)
+    if plot_training:
+        plt.plot(X[:, 0][y==0], X[:, 1][y==0], "yo", label="Iris setosa")
+        plt.plot(X[:, 0][y==1], X[:, 1][y==1], "bs", label="Iris versicolor")
+        plt.plot(X[:, 0][y==2], X[:, 1][y==2], "g^", label="Iris virginica")
+        plt.axis(axes)
+    if iris:
+        plt.xlabel("Sepal length", fontsize=14)
+        plt.ylabel("Sepal width", fontsize=14)
+    if legend:
+        plt.legend(loc="lower right", fontsize=14)
+        
+       
+plt.figure(figsize=(8, 4))
+plot_decision_boundary(tree_clf, X, y)
+plt.plot([2.45, 2.45], [0, 3], "k-", linewidth=2)
+plt.plot([2.45, 7.5], [1.75, 1.75], "k--", linewidth=2)
+plt.plot([4.95, 4.95], [0, 1.75], "k:", linewidth=2)
+plt.plot([4.85, 4.85], [1.75, 3], "k:", linewidth=2)
+plt.title("No restrictions", fontsize=16)
+plt.text(1.40, 1.0, "Depth=0", fontsize=15)
+plt.text(3.2, 1.80, "Depth=1", fontsize=13)
+plt.text(4.05, 0.5, "(Depth=2)", fontsize=11)
+plt.figure(figsize=(8, 4))
+
+
+plot_decision_boundary(tree_clf2, X, y)
+plt.plot([2.45, 2.45], [0, 3], "k-", linewidth=2)
+plt.plot([2.45, 7.5], [1.75, 1.75], "k--", linewidth=2)
+plt.plot([4.95, 4.95], [0, 1.75], "k:", linewidth=2)
+plt.plot([4.85, 4.85], [1.75, 3], "k:", linewidth=2)
+plt.title("Regularizing Hyperparameters", fontsize=16)
+plt.text(1.40, 1.0, "Depth=0", fontsize=15)
+plt.text(3.2, 1.80, "Depth=1", fontsize=13)
+plt.text(4.05, 0.5, "(Depth=2)", fontsize=11)
+
+plt.show()
+
