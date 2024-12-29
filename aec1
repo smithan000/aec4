@@ -1,0 +1,171 @@
+EXPERIMENT 1
+# Importing Standard Libraries
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# Importing sklearn Libraries
+from sklearn import datasets
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import train_test_split, learning_curve
+from sklearn.linear_model import LinearRegression
+from sklearn import linear_model
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+
+# inputs in the two-dimensional array X
+X = np.arange(1, 25).reshape(12, 2)
+# outputs in the one-dimensional array y
+y = np.array([0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0])
+
+print(X)
+
+print(y)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=4, random_state=4)
+
+X_train
+
+X_test
+
+y_train
+
+y_test
+
+# Generating Sample data
+rng = np.random.RandomState(1)              # instantiate random number generator
+x = 10 * rng.rand(50)                       # generate 50 random numbers from uniform distribution
+y = 2 * x - 5 + rng.randn(50)               # use 50 random numbers from normal distribution as noise
+plt.scatter(x, y, c='b');
+
+model = LinearRegression(fit_intercept=True)                   # instantiate LinearRegression
+model.fit(x[:, np.newaxis], y)                                 # fit the model on data using 'x' as column vector
+xfit = np.linspace(0, 10, 1000)                                # create 1000 points between 0 and 10
+yfit = model.predict(xfit[:, np.newaxis])                      # predict the values for dependent variable
+plt.scatter(x, y, c='b')
+plt.plot(xfit, yfit, 'k');
+
+def make_data(N, err=1.0, rseed=1):
+    # randomly sample the data
+    rng = np.random.RandomState(rseed)
+    X = rng.rand(N, 1) ** 2
+    y = 10 - 1. / (X.ravel() + 0.1)
+    if err > 0:
+        y += err * rng.randn(N)
+    return X, y
+X, y = make_data(40)
+
+#learning curve
+def PolynomialRegression(degree):
+    return make_pipeline(PolynomialFeatures(degree), LinearRegression())
+
+fig, ax = plt.subplots(1, 2, figsize=(16, 6))
+fig.subplots_adjust(left=0.0625, right=0.95, wspace=0.1)
+
+for i, degree in enumerate([2, 9]):
+    N, train_lc, val_lc = learning_curve(PolynomialRegression(degree),
+                                         X, y, cv=7,
+                                         train_sizes=np.linspace(0.3, 1, 25))
+    ax[i].plot(N, np.mean(train_lc, 1), color='blue', label='training score')
+    ax[i].plot(N, np.mean(val_lc, 1), color='red', label='validation score')
+    ax[i].hlines(np.mean([train_lc[-1], val_lc[-1]]), N[0], N[-1],
+                 color='gray', linestyle='dashed')
+    ax[i].set_ylim(0, 1)
+    ax[i].set_xlim(N[0], N[-1])
+    ax[i].set_xlabel('training size')
+    ax[i].set_ylabel('score')
+    ax[i].set_title('degree = {0}'.format(degree), size=14)
+    ax[i].legend(loc='best')
+
+#LINEAR regression
+auto = pd.read_csv("auto-mpg.csv")
+auto.head()
+print(auto.columns)
+auto.describe()
+auto.info(
+auto.isna().sum()
+
+plt.style.use('ggplot')
+sns.pairplot(auto)
+
+numeric_auto = auto.select_dtypes(include=['number'])
+
+corr_matrix = numeric_auto.corr()
+
+plt.figure(figsize=(8, 8))
+sns.heatmap(corr_matrix, annot=True, linewidth=0.5, center = 0, cmap = 'coolwarm')
+plt.title("Correlation Matrix")
+plt.show()
+
+auto['horsepower'].unique()
+auto = auto[auto['horsepower'] != '?']
+auto['horsepower'].unique()
+
+auto['horsepower'] = auto['horsepower'].astype(float)
+auto.dtypes
+X = auto[['displacement', 'horsepower', 'acceleration', 'model year', 'origin']]
+# Target feature
+y = auto['mpg']
+X.head()
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size= 0.33, random_state= 101)
+
+X_train.head()
+
+ lr = LinearRegression()
+pred = lr.predict(X_test)
+
+print('Mean Absolute Error:', mean_absolute_error(y_test, pred))
+print('Mean Squared Error:', mean_squared_error(y_test, pred))
+print('Mean Root Squared Error:', np.sqrt(mean_squared_error(y_test, pred)))
+print('Coefficient of Determination:', r2_score(y_test, pred))
+
+pred = lr.predict(X_test)
+print('Predicted fuel consumption(mpg):', pred[2])
+print('Actual fuel consumption(mpg):', y_test.values[2])
+
+Ridge regression
+n_samples, n_features = 15, 10
+rng = np.random.RandomState(0)
+y = rng.randn(n_samples)
+X = rng.randn(n_samples, n_features)
+
+rdg = linear_model.Ridge(alpha = 0.5)                  # instantiate Ridge regressor
+rdg.fit(X, y)
+rdg.score(X,y)
+
+Lasso Regression with Scikit-Learn
+Lreg = linear_model.Lasso(alpha = 0.5)
+Lreg.fit([[0,0], [1, 1], [2, 2]], [0, 1, 2])
+
+Lreg.predict([[0,1]])
+
+#weight vectors
+Lreg.coef_
+
+#Calculating intercept
+Lreg.intercept_
+
+#Calculating number of iterations
+Lreg.n_iter_
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
