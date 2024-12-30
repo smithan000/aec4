@@ -1,7 +1,7 @@
 !pip -qq install catboost
 
 
-
+!pip install --user lightgbm
 
 
 import numpy as np
@@ -54,7 +54,6 @@ sns.heatmap(data.isnull())
 plt.title('Null values heat plot', fontdict={'fontsize': 20})
 plt.legend(data.isnull())
 plt.show()
-
 
 
 # Creating a dataframe to display percentage of null values in different number of columns
